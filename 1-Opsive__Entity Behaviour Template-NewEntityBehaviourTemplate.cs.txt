@@ -1,0 +1,158 @@
+using Opsive.BehaviorDesigner.Runtime.Components;
+using Opsive.BehaviorDesigner.Runtime.Tasks;
+using Opsive.GraphDesigner.Runtime;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Mathematics;
+using UnityEngine;
+
+	#ROOTNAMESPACEBEGIN#
+public partial struct #SCRIPTNAME# : ILogicNode, ITaskComponentData, IConditional, IReevaluateResponder
+{
+    [SerializeField] ushort m_Index;
+    [SerializeField] ushort m_ParentIndex;
+    [SerializeField] ushort m_SiblingIndex;
+    
+    public ushort Index
+    {
+        get => m_Index;
+        set => m_Index = value;
+    }
+
+    public ushort ParentIndex
+    {
+        get => m_ParentIndex;
+        set => m_ParentIndex = value;
+    }
+
+    public ushort SiblingIndex
+    {
+        get => m_SiblingIndex;
+        set => m_SiblingIndex = value;
+    }
+
+
+    public ushort RuntimeIndex { get; set; }
+    
+    //************
+    // Node Params Here
+    // [SerializeField] float m_ExampleParam;
+    
+    
+    //************
+    
+    public ComponentType Tag => typeof(#SCRIPTNAME#Tag);
+    public System.Type SystemType => typeof(#SCRIPTNAME#TaskSystem);
+    
+    
+    public void AddBufferElement(World world, Entity entity)
+    {
+        DynamicBuffer<#SCRIPTNAME#Component> buffer;
+        
+        if (world.EntityManager.HasBuffer<#SCRIPTNAME#Component>(entity))
+        {
+            buffer = world.EntityManager.GetBuffer<#SCRIPTNAME#Component>(entity);
+        }
+        else
+        {
+            buffer = world.EntityManager.AddBuffer<#SCRIPTNAME#Component>(entity);
+        }
+
+        buffer.Add(new #SCRIPTNAME#Component
+        {
+            Index = RuntimeIndex
+            // Set Other Node Params Here
+        });
+    }
+
+    public void ClearBufferElement(World world, Entity entity)
+    {
+        if (world.EntityManager.HasBuffer<#SCRIPTNAME#Component>(entity))
+        {
+            DynamicBuffer<#SCRIPTNAME#Component> buffer = world.EntityManager.GetBuffer<#SCRIPTNAME#Component>(entity);
+            buffer.Clear();
+        }
+    }
+
+    public ComponentType ReevaluateTag => typeof(#SCRIPTNAME#ReevaluateTag);
+    public System.Type ReevaluateSystemType => typeof(#SCRIPTNAME#ReevaluateTaskSystem);
+    
+    
+    public struct #SCRIPTNAME#Component : IBufferElementData
+    {
+        public ushort Index;
+        // Add Other Node Params Here
+    }
+    
+    
+    public struct #SCRIPTNAME#Tag : IComponentData, IEnableableComponent{}
+    public struct #SCRIPTNAME#ReevaluateTag : IComponentData, IEnableableComponent{}
+    
+    public partial struct #SCRIPTNAME#TaskSystem : ISystem
+    {
+        private EntityQuery m_Query;
+
+        [BurstCompile]
+        public void OnCreate(ref SystemState state)
+        {
+            m_Query = new EntityQueryBuilder(Allocator.Temp).WithAllRW<TaskComponent>().WithAll<#SCRIPTNAME#Component, #SCRIPTNAME#Tag, EvaluationComponent>().Build(ref state);
+        }
+
+        [BurstCompile]
+        public void OnUpdate(ref SystemState state)
+        {
+            state.Dependency = new #SCRIPTNAME#Job().ScheduleParallel(m_Query, state.Dependency);
+        }
+
+        [BurstCompile]
+        private partial struct #SCRIPTNAME#Job : IJobEntity
+        {
+            public void Execute(ref DynamicBuffer<TaskComponent> taskComponents, ref DynamicBuffer<#SCRIPTNAME#Component> components)
+            {
+                for (int x = 0; x < components.Length; x++)
+                {
+                    #SCRIPTNAME#Component component = components[x];
+                    TaskComponent taskComponent = taskComponents[component.Index];
+                    
+                    //Add Logic Here
+                }
+            }
+        }
+    }
+    
+    
+    private partial struct #SCRIPTNAME#ReevaluateTaskSystem : ISystem
+    {
+        private EntityQuery m_Query;
+
+        [BurstCompile]
+        public void OnCreate(ref SystemState state)
+        {
+            m_Query = new EntityQueryBuilder(Allocator.Temp).WithAllRW<TaskComponent>().WithAll<#SCRIPTNAME#Component, #SCRIPTNAME#ReevaluateTag, EvaluationComponent>().Build(ref state);
+        }
+
+        [BurstCompile]
+        public void OnUpdate(ref SystemState state)
+        {
+            state.Dependency = new #SCRIPTNAME#Job().ScheduleParallel(m_Query, state.Dependency);
+        }
+
+        [BurstCompile]
+        private partial struct #SCRIPTNAME#Job : IJobEntity
+        {
+            public void Execute(ref DynamicBuffer<TaskComponent> taskComponents, ref DynamicBuffer<#SCRIPTNAME#Component> components)
+            {
+                for (int x = 0; x < components.Length; x++)
+                {
+                    #SCRIPTNAME#Component component = components[x];
+                    TaskComponent taskComponent = taskComponents[component.Index];
+                    
+                    //Add Reevaluate Logic Here
+                }
+            }
+        }
+    }
+}
+
+#ROOTNAMESPACEEND#
