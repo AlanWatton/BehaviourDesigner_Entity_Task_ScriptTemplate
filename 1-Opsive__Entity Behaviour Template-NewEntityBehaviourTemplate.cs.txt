@@ -135,11 +135,11 @@ public partial struct #SCRIPTNAME# : ILogicNode, ITaskComponentData, IConditiona
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            state.Dependency = new #SCRIPTNAME#Job().ScheduleParallel(m_Query, state.Dependency);
+            state.Dependency = new #SCRIPTNAME#ReevaluateJob().ScheduleParallel(m_Query, state.Dependency);
         }
 
         [BurstCompile]
-        private partial struct #SCRIPTNAME#Job : IJobEntity
+        private partial struct #SCRIPTNAME#ReevaluateJob : IJobEntity
         {
             public void Execute(ref DynamicBuffer<TaskComponent> taskComponents, ref DynamicBuffer<#SCRIPTNAME#Component> components)
             {
